@@ -19,4 +19,4 @@ class UsersModel(db.Model):
     role = db.Column(db.Enum(Role), nullable= False)
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable= False)
     
-    post = db.relationship("posts", back_populates = "users", lazy= "dynamic")
+    posts = db.relationship("PostModel", back_populates="user", lazy="dynamic")

@@ -2,9 +2,11 @@ from flask import request
 from flask.views import MethodView
 from flask_smorest import abort, Blueprint
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
 
-from schemas.post_schemas import PostAddUpdateSchema
-from demo_data import users, posts, category
+from db import db
+from models import PostModel
+from schemas.post_schemas import PlainPostSchema
 from id_generater import generate_id
 
 
@@ -12,73 +14,97 @@ posts_blp = Blueprint("posts", __name__, description="Operations on posts")
 
 @posts_blp.route("/posts/<string:id>")
 class Post_by_id(MethodView):
-    @posts_blp.response(200, PostAddUpdateSchema)
+    @posts_blp.response(200, PlainPostSchema)
     def get(self,id):
-        try:
-            return posts[id]
-        except:
-            abort(404, message="Post not Found")
-    
+        post = PostModel.query.get_or_404(id)
+        return post
 
-    @posts_blp.arguments(PostAddUpdateSchema)
-    @posts_blp.response(200, PostAddUpdateSchema)
+
+    @posts_blp.arguments(PlainPostSchema)
+    @posts_blp.response(200, PlainPostSchema)
     def put(self,id, request_data):
         # request_data = request.get_json()
     
-        timestamp = datetime.now()
+        # timestamp = datetime.now()
+        
+        # try:
+        #     post = posts[id]
+        #     post.update({
+        #         **request_data,
+        #         "updated_at": timestamp,
+        #     })
+        #     return post
+        # except KeyError:
+        #     abort(404, message="post not found")
+        post = PostModel.query.get(id)
+        if not post:
+            abort(404, message="post not found")
+        
+        post.title = request_data["title"]
+        post.content = request_data["content"]
+        post.status = request_data["status"]
         
         try:
-            post = posts[id]
-            post.update({
-                **request_data,
-                "updated_at": timestamp,
-            })
+            db.session.commit()
             return post
-            
-        except KeyError:
-            abort(404, message="post not found")
-    
+        except SQLAlchemyError as e:
+            print(e)
+            abort(500, message=f"An error occurred while inserting the post. {e}")
+
+
+
     def delete(self,id):
-        try:
-            del posts[id]
-            return {"message": "post deleted sucessfully"}, 202
-        except:
-            abort(404, message="post not found")
+        # try:
+        #     del posts[id]
+        #     return {"message": "post deleted sucessfully"}, 202
+        # except:
+        #     abort(404, message="post not found")
+        post = PostModel.query.get_or_404(id)
+        db.session.delete(post)
+        db.session.commit()
+        return {"message": "Post Deleted Sucessfully"}, 202
 
 
 @posts_blp.route("/posts")
 class Post(MethodView):
-    @posts_blp.response(200, PostAddUpdateSchema(many=True))
+    @posts_blp.response(200, PlainPostSchema(many=True))
     def get(self):
         # return {"posts": list(posts.values())}
-        return posts.values()
+        posts = PostModel.query.all()
+        return posts
     
-    @posts_blp.arguments(PostAddUpdateSchema)
-    @posts_blp.response(201, PostAddUpdateSchema)
+    @posts_blp.arguments(PlainPostSchema)
+    @posts_blp.response(201, PlainPostSchema)
     def post(self,request_data):
         # request_data = request.get_json()
     
-        if (request_data["user_id"] in users) and (request_data["category_id"] in category):
+        # if (request_data["user_id"] in users) and (request_data["category_id"] in category):
             
-            id = generate_id("post", request_data["title"])
-            timestamp = datetime.now()
-            # new_post = {
-            #     "id": id,
-            #     "title" : request_data["title"],
-            #     "content": request_data["content"],
-            #     "category_id": request_data["category_id"],
-            #     "user_id": request_data["user_id"],
-            #     "created_at": timestamp,
-            #     "updated_at": timestamp
-            # }
-            new_post = {
-                **request_data,
-                "id" : id,
-                "created_at": timestamp,
-                "updated_at": timestamp
-            }
-                
-            posts[id] = new_post
-            return new_post , 201
-            
-        abort(404, message="UserId not found")
+        #     id = generate_id("post", request_data["title"])
+        #     timestamp = datetime.now()
+        #     # new_post = {
+        #     #     "id": id,
+        #     #     "title" : request_data["title"],
+        #     #     "content": request_data["content"],
+        #     #     "category_id": request_data["category_id"],
+        #     #     "user_id": request_data["user_id"],
+        #     #     "created_at": timestamp,
+        #     #     "updated_at": timestamp
+        #     # }
+        #     new_post = {
+        #         **request_data,
+        #         "id" : id,
+        #         "created_at": timestamp,
+        #         "updated_at": timestamp
+        #     }
+        #     posts[id] = new_post
+        #     return new_post , 201
+        new_post = PostModel(**request_data)
+        try:
+            db.session.add(new_post)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            print(e)
+            abort(500, message=f"An error occurred while inserting the post. {e}")
+        
+        return new_post
