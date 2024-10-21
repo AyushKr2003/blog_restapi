@@ -5,8 +5,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from db import db
 from models import CategoryModel
 from schemas.category_schemas import CategorySchemas
-# from demo_data import category
-from id_generater import generate_id
 
 category_blp = Blueprint("category", __name__, description="Operations on category")
 
@@ -36,7 +34,7 @@ class Category(MethodView):
             abort(404, message = f"Internal Server Error. {e}")
         return category
 
-@category_blp.route("/category/<string:id>")
+@category_blp.route("/category/<int:id>")
 class Category_By_Id(MethodView):
     def get(self,id):
         category = CategoryModel.query.get_or_404(id)
@@ -54,8 +52,19 @@ class Category_By_Id(MethodView):
         #     return cat
         # except KeyError:
         #     abort(401, message="Category not found.")
-        category = CategoryModel.query.get_or_404(id)
-        raise NotImplementedError("Under Development")
+        category = CategoryModel.query.get(id)
+        
+        category.name = requested_data["name"]
+        
+        if not category:
+            abort(404, message = "Category not found")
+        
+        try:
+            db.session.add(category)
+            db.session.commit()
+            return category
+        except SQLAlchemyError as e:
+            abort(404, message = f"Internal Server Error. {e}")
     
     def delete(self, id):
         # try:

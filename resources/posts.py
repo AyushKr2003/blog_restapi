@@ -7,12 +7,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from db import db
 from models import PostModel
 from schemas.post_schemas import PlainPostSchema
-from id_generater import generate_id
 
 
 posts_blp = Blueprint("posts", __name__, description="Operations on posts")
 
-@posts_blp.route("/posts/<string:id>")
+@posts_blp.route("/posts/<int:id>")
 class Post_by_id(MethodView):
     @posts_blp.response(200, PlainPostSchema)
     def get(self,id):
@@ -45,6 +44,7 @@ class Post_by_id(MethodView):
         post.status = request_data["status"]
         
         try:
+            db.session.add(post)
             db.session.commit()
             return post
         except SQLAlchemyError as e:

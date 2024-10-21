@@ -1,11 +1,11 @@
 import os
+import secrets
 from flask import Flask
 from flask_smorest import Api
+from flask_jwt_extended import JWTManager
 
-
-import models
 from db import db
-from resources import users_blp, posts_blp, category_blp
+from resources import users_blp, posts_blp, category_blp, comment_blp
 
 
 def create_app(db_url=None):
@@ -27,10 +27,14 @@ def create_app(db_url=None):
     with app.app_context():
         db.create_all()
 
+    # app.config["JWT_SECRET_KEY"] = secrets.SystemRandom().getrandbits(128)
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
+    jwt = JWTManager(app)
     api = Api(app)
 
     api.register_blueprint(users_blp)
     api.register_blueprint(posts_blp)
     api.register_blueprint(category_blp)
+    api.register_blueprint(comment_blp)
     
     return app
