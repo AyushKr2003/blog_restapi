@@ -3,10 +3,11 @@ from flask.views import MethodView
 from flask_smorest import abort,Blueprint
 from sqlalchemy.exc import SQLAlchemyError
 from passlib.hash import pbkdf2_sha256
+from flask_jwt_extended import create_access_token, jwt_required
 
 from db import db
 from models import UsersModel
-from schemas.users_schemas import UserSchema
+from schemas import UserSchema,UserLoginSchema
 
 
 users_blp = Blueprint("users", __name__, description="user operation")
@@ -72,22 +73,15 @@ class UserSignup(MethodView):
         return new_user
 
 
-# @app.get("/userslist")
-# def get_all_users():
-#     return {"users": list(users.values())};
-
-# @app.post("/adduser")
-# def add_user():
-#     request_data = request.get_json()
-    
-#     id = generate_id("user", request_data["username"])
-#     timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    
-#     new_user = {
-#             "id": id, 
-#             **request_data, 
-#             "created_at": timestamp
-#         }
-#     users[id] = new_user
-    
-#     return new_user, 201
+@users_blp.route("/user/login")
+class LogIn(MethodView):
+    @users_blp.arguments(UserLoginSchema)
+    def post(self, request_data):
+        user = UsersModel.query.filter(
+            UsersModel.username == request_data["username"]
+        ).first()
+        if user and pbkdf2_sha256.verify(request_data["password"], user.password):
+            access_token = create_access_token(identity=user.id)
+            return {"access_token": access_token}
+        
+        abort(401, message="Invalid Credentials.")

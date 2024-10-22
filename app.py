@@ -19,7 +19,9 @@ def create_app(db_url=None):
     app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
     app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
     
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or os.getenv("DATABASE_URI", "sqlite:///data.db")  
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or os.getenv("DATABASE_URI")
+    print(app.config["SQLALCHEMY_DATABASE_URI"])
+    
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     db.init_app(app)
@@ -28,7 +30,8 @@ def create_app(db_url=None):
         db.create_all()
 
     # app.config["JWT_SECRET_KEY"] = secrets.SystemRandom().getrandbits(128)
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+    print(app.config["JWT_SECRET_KEY"])
     jwt = JWTManager(app)
     api = Api(app)
 
