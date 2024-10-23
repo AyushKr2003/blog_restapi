@@ -46,6 +46,8 @@ Create a `.env` file:
 5. **Initialize Database**
 
     ```bash
+    flask db init
+    flask db migrate
     flask db upgrade
     ```
 6. **Run the Application**
