@@ -69,7 +69,7 @@ scheduler.add_job(cleanup_blocklisted_tokens, 'interval', hours=24)
 ```
 
 ## API Documentation
-The complete API documentation, including all endpoints and details, can be found [here](api_docs\README.md).
+The complete API documentation, including all endpoints and details, can be found [here](api_docs/README.md).
 
 ## Swagger Documentation
 
