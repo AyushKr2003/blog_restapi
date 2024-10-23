@@ -1,3 +1,5 @@
+# This script generates Markdown documentation from the OpenAPI spec.
+
 import  requests
 import subprocess
 import os
