@@ -3,3 +3,4 @@ __pycache__
 # .env
 demo_data.py
 instance
+openapi.json

@@ -1,8 +1,8 @@
 from flask import request
 from flask.views import MethodView
 from flask_smorest import abort, Blueprint
-from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from db import db
 from models import PostModel
@@ -12,6 +12,7 @@ from schemas.post_schemas import PlainPostSchema
 posts_blp = Blueprint("posts", __name__, description="Operations on posts")
 
 @posts_blp.route("/posts/<int:id>")
+@jwt_required()
 class Post_by_id(MethodView):
     @posts_blp.response(200, PlainPostSchema)
     def get(self,id):
@@ -36,8 +37,15 @@ class Post_by_id(MethodView):
         # except KeyError:
         #     abort(404, message="post not found")
         post = PostModel.query.get(id)
+        
         if not post:
             abort(404, message="post not found")
+        
+        current_user = get_jwt_identity()
+        user_id = current_user['id']
+        
+        if post.user_id != user_id:
+            abort(403, message="You do not have permission to update this post.")
         
         post.title = request_data["title"]
         post.content = request_data["content"]
@@ -60,6 +68,13 @@ class Post_by_id(MethodView):
         # except:
         #     abort(404, message="post not found")
         post = PostModel.query.get_or_404(id)
+        
+        current_user = get_jwt_identity()
+        user_id = current_user['id']
+        
+        if post.user_id != user_id:
+            abort(403, message="You do not have permission to delete this post.")
+            
         db.session.delete(post)
         db.session.commit()
         return {"message": "Post Deleted Sucessfully"}, 202
@@ -73,6 +88,7 @@ class Post(MethodView):
         posts = PostModel.query.all()
         return posts
     
+    @jwt_required()
     @posts_blp.arguments(PlainPostSchema)
     @posts_blp.response(201, PlainPostSchema)
     def post(self,request_data):
@@ -99,6 +115,7 @@ class Post(MethodView):
         #     }
         #     posts[id] = new_post
         #     return new_post , 201
+        
         new_post = PostModel(**request_data)
         try:
             db.session.add(new_post)

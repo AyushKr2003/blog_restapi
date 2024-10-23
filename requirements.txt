@@ -4,4 +4,8 @@ python-dotenv
 sqlalchemy
 flask-sqlalchemy
 flask-jwt-extended
+flask-migrate
 passlib
+APScheduler
+requests
+openapi-generator-cli

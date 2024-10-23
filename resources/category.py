@@ -1,5 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import abort, Blueprint
+from flask_jwt_extended import jwt_required ,get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError
 
 from db import db
@@ -15,6 +16,7 @@ class Category(MethodView):
         categories = CategoryModel.query.all()
         return categories
     
+    @jwt_required()
     @category_blp.arguments(CategorySchemas)
     @category_blp.response(201, CategorySchemas)
     def post(self, requested_data):
@@ -34,6 +36,7 @@ class Category(MethodView):
             abort(404, message = f"Internal Server Error. {e}")
         return category
 
+@jwt_required()
 @category_blp.route("/category/<int:id>")
 class Category_By_Id(MethodView):
     def get(self,id):
@@ -73,4 +76,7 @@ class Category_By_Id(MethodView):
         # except:
         #     abort(404, message = "Category not found")
         category = CategoryModel.query.get_or_404(id)
-        raise NotImplementedError("Under Development")
+        
+        db.session.delete(category)
+        db.session.commit()
+        return {"message": "Category deleted sucessfully"}
